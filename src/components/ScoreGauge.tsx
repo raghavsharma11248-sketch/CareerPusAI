@@ -2,13 +2,12 @@
 
 import React, { useState } from 'react';
 import { useCandidate } from '@/lib/context/CandidateContext';
-import { CheckCircle2, AlertTriangle, Info, ChevronDown, ChevronUp, ShieldCheck, Sparkles, FileSearch } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 export default function ScoreGauge() {
   const { state } = useCandidate();
   const { atsScore, targetJob, candidateProfile, weakBullets } = state;
   const isAnalyzed = weakBullets.length > 0;
-  const [showFormula, setShowFormula] = useState(!isAnalyzed); // expanded by default in guide mode
 
   // Score color logic
   const score = atsScore.overall;
@@ -96,85 +95,15 @@ export default function ScoreGauge() {
           </div>
         </div>
 
-        <p className="text-xs text-stone-600 mt-1">
-          {isAnalyzed
-            ? 'Hiring Readiness Index based on Harvard Business School ATS research.'
-            : 'Audits resumes against 5 explainable dimensions instead of black-box guessing.'}
-        </p>
-
-        {/* Toggle Formula Breakdown */}
-        <button
-          onClick={() => setShowFormula(!showFormula)}
-          className="mt-3 inline-flex items-center space-x-1 text-xs font-mono text-sky-700 hover:text-sky-900 font-medium"
-        >
-          <Info className="w-3.5 h-3.5" />
-          <span>{showFormula ? 'Hide Weighted Formula' : 'View Explainable Breakdown'}</span>
-          {showFormula ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
-
-        {/* Explainable Formula Dimensions */}
-        {showFormula && (
-          <div className="mt-4 pt-3 border-t border-stone-100 text-left space-y-2.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-stone-600">Keyword Alignment (40%)</span>
-              <span className="font-mono font-semibold text-stone-900">
-                {isAnalyzed ? `${atsScore.keywordAlignment}%` : 'Required skills in JD'}
-              </span>
-            </div>
-            <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-sky-600 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.keywordAlignment : 40}%` }} />
-            </div>
-
-            <div className="flex justify-between text-xs">
-              <span className="text-stone-600">Semantic Cosine Distance (25%)</span>
-              <span className="font-mono font-semibold text-stone-900">
-                {isAnalyzed ? `${atsScore.semanticRelevance}%` : 'Vector similarity'}
-              </span>
-            </div>
-            <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-purple-600 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.semanticRelevance : 25}%` }} />
-            </div>
-
-            <div className="flex justify-between text-xs">
-              <span className="text-stone-600">Experience Level Match (15%)</span>
-              <span className="font-mono font-semibold text-stone-900">
-                {isAnalyzed ? `${atsScore.experienceRelevance}%` : 'Years & seniority'}
-              </span>
-            </div>
-            <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.experienceRelevance : 15}%` }} />
-            </div>
-
-            <div className="flex justify-between text-xs">
-              <span className="text-stone-600">Google XYZ Evidence (10%)</span>
-              <span className="font-mono font-semibold text-stone-900">
-                {isAnalyzed ? `${atsScore.achievementEvidence}%` : 'Quantified metrics'}
-              </span>
-            </div>
-            <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.achievementEvidence : 10}%` }} />
-            </div>
-
-            <div className="flex justify-between text-xs">
-              <span className="text-stone-600">ATS Hygiene Completeness (10%)</span>
-              <span className="font-mono font-semibold text-stone-900">
-                {isAnalyzed ? `${atsScore.hygieneCompleteness}%` : 'Single-column layout'}
-              </span>
-            </div>
-            <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-stone-700 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.hygieneCompleteness : 10}%` }} />
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Skill Gap Analysis Card */}
-      <div className="blueprint-card p-4 space-y-3">
-        <span className="mono-tag text-stone-500 uppercase tracking-wider block">Skill Gap Analysis</span>
-        
-        {isAnalyzed ? (
-          <>
-            {/* Matched Skills */}
+
+      {/* Skill Gap & Hygiene Cards (Shown only after audit) */}
+      {isAnalyzed && (
+        <>
+          <div className="blueprint-card p-4 space-y-3">
+            <span className="mono-tag text-stone-500 uppercase tracking-wider block">Skill Gap Analysis</span>
+            
             <div>
               <span className="text-xs font-semibold text-stone-700 flex items-center mb-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mr-1" />
@@ -189,7 +118,6 @@ export default function ScoreGauge() {
               </div>
             </div>
 
-            {/* Missing Skills */}
             <div>
               <span className="text-xs font-semibold text-stone-700 flex items-center mb-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mr-1" />
@@ -203,36 +131,24 @@ export default function ScoreGauge() {
                 ))}
               </div>
             </div>
-          </>
-        ) : (
-          <div className="text-xs text-stone-600 space-y-1.5 bg-stone-50 p-3 rounded border border-stone-200">
-            <p className="font-medium text-stone-800 flex items-center">
-              <FileSearch className="w-3.5 h-3.5 text-sky-600 mr-1.5" />
-              How Gap Detection Works:
-            </p>
-            <p className="text-[11px] text-stone-600 leading-relaxed">
-              Agent 1 extracts required and nice-to-have skills from the target job opening, compares them with your resume, and marks matches in green and gaps in red.
-            </p>
           </div>
-        )}
-      </div>
 
-      {/* Hygiene & Security Guardrail Card */}
-      <div className="blueprint-card p-4">
-        <div className="flex items-center space-x-1.5 mb-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span className="mono-tag text-stone-700 font-semibold uppercase">ATS Hygiene Guardrails</span>
-        </div>
-        <ul className="space-y-1.5 text-xs text-stone-600">
-          {atsScore.hygieneFeedback.map((fb, idx) => (
-            <li key={idx} className="flex items-start space-x-1.5">
-              <span className="text-stone-400 font-mono">•</span>
-              <span>{fb}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
+          <div className="blueprint-card p-4">
+            <div className="flex items-center space-x-1.5 mb-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span className="mono-tag text-stone-700 font-semibold uppercase">ATS Hygiene Guardrails</span>
+            </div>
+            <ul className="space-y-1.5 text-xs text-stone-600">
+              {atsScore.hygieneFeedback.map((fb, idx) => (
+                <li key={idx} className="flex items-start space-x-1.5">
+                  <span className="text-stone-400 font-mono">•</span>
+                  <span>{fb}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
     </div>
   );
 }
