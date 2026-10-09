@@ -16,19 +16,18 @@ import {
   User,
   ShieldCheck,
   X,
-  Check
+  Check,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { loadDemo, state, apiKey, setApiKey, userEmail, isAuthenticated, loginWithEmail, logout } = useCandidate();
+  const { loadDemo, state, apiKey, setApiKey, userName, userEmail, isAuthenticated, logout } = useCandidate();
 
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
   const [keyInput, setKeyInput] = useState<string>(apiKey);
-  const [emailInput, setEmailInput] = useState<string>('');
-  const [authError, setAuthError] = useState<string>('');
-  const [authSuccess, setAuthSuccess] = useState<string>('');
 
   const navLinks = [
     { href: '/', label: 'Auditor & Tailor', icon: LayoutDashboard },
@@ -40,19 +39,6 @@ export default function Navbar() {
   const handleSaveKey = () => {
     setApiKey(keyInput.trim());
     setShowKeyModal(false);
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-    setAuthSuccess('');
-    const result = loginWithEmail(emailInput);
-    if (!result.success) {
-      setAuthError(result.error || 'Authentication rejected');
-    } else {
-      setAuthSuccess('Verified and authenticated!');
-      setTimeout(() => setShowAuthModal(false), 1200);
-    }
   };
 
   return (
@@ -137,15 +123,78 @@ export default function Navbar() {
               <span className="hidden sm:inline">{apiKey ? 'Gemini Key Configured' : 'Set Gemini Key'}</span>
             </button>
 
-            {/* Verified Candidate Auth Pill */}
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-800"
-              title="Verified Candidate Authentication"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="max-w-[110px] truncate">{userEmail || 'Sign In'}</span>
-            </button>
+            {/* User Auth: Profile Dropdown or Sign In / Sign Up */}
+            {isAuthenticated ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-800 transition-colors"
+                  title="Candidate Account"
+                >
+                  <div className="w-5 h-5 rounded-full bg-stone-900 text-white flex items-center justify-center text-[10px] font-bold">
+                    {(userName || userEmail || 'U').slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="max-w-[100px] truncate hidden sm:inline">{userName || userEmail}</span>
+                  <ChevronDown className="w-3 h-3 text-stone-500" />
+                </button>
+
+                {userMenuOpen && (
+                  <div 
+                    className="absolute right-0 mt-1.5 w-56 bg-white border border-stone-200 rounded-xl shadow-lg p-2 z-50 animate-in fade-in zoom-in-95"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    <div className="px-3 py-2 border-b border-stone-100">
+                      <span className="font-semibold text-xs text-stone-900 block truncate">{userName || 'Candidate'}</span>
+                      <span className="text-[11px] font-mono text-stone-500 block truncate">{userEmail}</span>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        href={`/portfolio/${state.portfolioData?.slug || 'alex-chen-stripe-2026'}`}
+                        className="flex items-center space-x-2 px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-100 rounded-md transition-colors"
+                      >
+                        <Globe className="w-3.5 h-3.5 text-stone-500" />
+                        <span>View Live Portfolio</span>
+                      </Link>
+                      <Link
+                        href="/login"
+                        className="flex items-center space-x-2 px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-100 rounded-md transition-colors"
+                      >
+                        <User className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Account & Switch User</span>
+                      </Link>
+                    </div>
+
+                    <div className="pt-1 border-t border-stone-100">
+                      <button
+                        type="button"
+                        onClick={logout}
+                        className="w-full flex items-center space-x-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center space-x-1.5">
+                <Link
+                  href="/login"
+                  className="px-2.5 py-1.5 text-xs font-mono text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-md transition-colors"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-2.5 py-1.5 text-xs font-mono font-medium rounded-md bg-stone-900 hover:bg-stone-800 text-white transition-colors shadow-xs"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
 
             {/* GitHub Repo */}
             <a
@@ -206,88 +255,6 @@ export default function Navbar() {
                 Save Key
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Trusted Auth Modal */}
-      {showAuthModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-lg shadow-xl border border-stone-200 max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
-              <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-semibold text-stone-900 text-sm">Trusted Candidate Authentication</h3>
-              </div>
-              <button onClick={() => setShowAuthModal(false)} className="text-stone-400 hover:text-stone-600">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-3 rounded bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
-              <span className="font-semibold block">Candidate Security Policy:</span>
-              <p>
-                To protect candidate PII and prevent fake submissions, only verified domains (<code className="font-mono bg-white px-1 py-0.5 rounded">@gmail.com</code>, <code className="font-mono bg-white px-1 py-0.5 rounded">@outlook.com</code>, <code className="font-mono bg-white px-1 py-0.5 rounded">@yahoo.com</code>, <code className="font-mono bg-white px-1 py-0.5 rounded">@icloud.com</code>) are permitted.
-              </p>
-            </div>
-
-            {isAuthenticated && userEmail && (
-              <div className="p-3 rounded bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
-                <div>
-                  <span className="font-semibold block">Currently Authenticated:</span>
-                  <span className="font-mono">{userEmail}</span>
-                </div>
-                <button
-                  onClick={logout}
-                  className="px-2 py-1 text-[11px] font-mono rounded bg-white text-rose-700 hover:bg-rose-50 border border-rose-200"
-                >
-                  Sign Out
-                </button>
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-3 pt-1">
-              <div>
-                <label className="block text-xs font-mono text-stone-600 mb-1">Enter Your Trusted Email</label>
-                <input
-                  type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="yourname@gmail.com"
-                  className="w-full text-xs font-mono p-2.5 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900"
-                  required
-                />
-              </div>
-
-              {authError && (
-                <p className="text-xs text-rose-600 font-mono leading-relaxed bg-rose-50 p-2 rounded border border-rose-200">
-                  {authError}
-                </p>
-              )}
-
-              {authSuccess && (
-                <p className="text-xs text-emerald-600 font-mono leading-relaxed bg-emerald-50 p-2 rounded border border-emerald-200 flex items-center space-x-1">
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{authSuccess}</span>
-                </p>
-              )}
-
-              <div className="flex justify-end space-x-2 pt-2 border-t border-stone-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAuthModal(false)}
-                  className="px-3 py-1.5 text-xs font-mono rounded bg-stone-100 text-stone-700 hover:bg-stone-200"
-                >
-                  Close
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 text-xs font-mono font-medium rounded bg-stone-900 text-white hover:bg-stone-800"
-                >
-                  Verify & Sign In
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

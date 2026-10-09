@@ -81,10 +81,15 @@ interface CandidateContextType {
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   apiKey: string;
   setApiKey: (key: string) => void;
+  userName: string;
+  setUserName: (name: string) => void;
   userEmail: string;
   setUserEmail: (email: string) => void;
   isAuthenticated: boolean;
   loginWithEmail: (email: string) => { success: boolean; error?: string };
+  login: (email: string, password?: string) => { success: boolean; error?: string };
+  signup: (name: string, email: string, password?: string) => { success: boolean; error?: string };
+  loginSocial: (provider: 'google' | 'github') => { success: boolean; error?: string };
   logout: () => void;
 }
 
@@ -94,6 +99,7 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CandidateState>(DEFAULT_STATE);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [apiKey, setApiKey] = useState<string>('');
+  const [userName, setUserName] = useState<string>('Alex Chen');
   const [userEmail, setUserEmail] = useState<string>('alex.chen@gmail.com');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
 
@@ -103,9 +109,13 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
       const storedKey = localStorage.getItem('careerpulse_gemini_key');
       if (storedKey) setApiKey(storedKey);
       const storedEmail = localStorage.getItem('careerpulse_user_email');
+      const storedName = localStorage.getItem('careerpulse_user_name');
       if (storedEmail) {
         setUserEmail(storedEmail);
         setIsAuthenticated(true);
+      }
+      if (storedName) {
+        setUserName(storedName);
       }
     }
   }, []);
@@ -118,30 +128,119 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
     addTerminalLog('System', 'Google Gemini API Key updated and securely stored.', 'success');
   };
 
-  const loginWithEmail = (email: string): { success: boolean; error?: string } => {
+  const validateEmail = (email: string): { valid: boolean; error?: string; domain?: string } => {
     const trimmed = email.trim().toLowerCase();
     const trustedDomains = ['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'yahoo.com', 'icloud.com'];
     const parts = trimmed.split('@');
     if (parts.length !== 2 || !trustedDomains.includes(parts[1])) {
       return {
-        success: false,
+        valid: false,
         error: `Only verified trusted email providers (${trustedDomains.slice(0, 4).join(', ')}, etc.) are permitted for candidate security. Disposable/unverified emails are rejected.`,
       };
     }
+    return { valid: true, domain: parts[1] };
+  };
+
+  const loginWithEmail = (email: string): { success: boolean; error?: string } => {
+    return login(email);
+  };
+
+  const login = (email: string, password?: string): { success: boolean; error?: string } => {
+    const val = validateEmail(email);
+    if (!val.valid) return { success: false, error: val.error };
+
+    const trimmed = email.trim().toLowerCase();
     setUserEmail(trimmed);
     setIsAuthenticated(true);
+
+    // If name is default, derive from email local-part
+    const defaultName = trimmed.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const finalName = userName || defaultName;
+    setUserName(finalName);
+
+    setState((prev) => ({
+      ...prev,
+      candidateProfile: {
+        ...prev.candidateProfile,
+        fullName: finalName,
+        email: trimmed,
+      },
+    }));
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('careerpulse_user_email', trimmed);
+      localStorage.setItem('careerpulse_user_name', finalName);
     }
-    addTerminalLog('Auth Guard', `Candidate authenticated with trusted domain: ${parts[1]}`, 'success');
+
+    addTerminalLog('Auth Guard', `Candidate signed in: ${trimmed}`, 'success');
+    return { success: true };
+  };
+
+  const signup = (name: string, email: string, password?: string): { success: boolean; error?: string } => {
+    if (!name.trim()) {
+      return { success: false, error: 'Please enter your full name.' };
+    }
+    const val = validateEmail(email);
+    if (!val.valid) return { success: false, error: val.error };
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
+
+    setUserName(trimmedName);
+    setUserEmail(trimmedEmail);
+    setIsAuthenticated(true);
+
+    setState((prev) => ({
+      ...prev,
+      candidateProfile: {
+        ...prev.candidateProfile,
+        fullName: trimmedName,
+        email: trimmedEmail,
+      },
+    }));
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('careerpulse_user_name', trimmedName);
+      localStorage.setItem('careerpulse_user_email', trimmedEmail);
+    }
+
+    addTerminalLog('Auth Guard', `New candidate account created for ${trimmedName} (${trimmedEmail})`, 'success');
+    return { success: true };
+  };
+
+  const loginSocial = (provider: 'google' | 'github'): { success: boolean; error?: string } => {
+    const mockEmail = provider === 'google' ? 'alex.chen@gmail.com' : 'alex.chen.dev@github.com';
+    const mockName = 'Alex Chen';
+
+    setUserName(mockName);
+    setUserEmail(mockEmail);
+    setIsAuthenticated(true);
+
+    setState((prev) => ({
+      ...prev,
+      candidateProfile: {
+        ...prev.candidateProfile,
+        fullName: mockName,
+        email: mockEmail,
+      },
+    }));
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('careerpulse_user_name', mockName);
+      localStorage.setItem('careerpulse_user_email', mockEmail);
+    }
+
+    addTerminalLog('OAuth 2.0', `Authenticated via ${provider.toUpperCase()} Single Sign-On`, 'success');
     return { success: true };
   };
 
   const logout = () => {
     setUserEmail('');
+    setUserName('');
     setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('careerpulse_user_email');
+      localStorage.removeItem('careerpulse_user_name');
     }
     addTerminalLog('Auth Guard', 'Candidate signed out.', 'info');
   };
@@ -267,10 +366,15 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
         setIsProcessing,
         apiKey,
         setApiKey: handleSetApiKey,
+        userName,
+        setUserName,
         userEmail,
         setUserEmail,
         isAuthenticated,
         loginWithEmail,
+        login,
+        signup,
+        loginSocial,
         logout,
       }}
     >
