@@ -43,21 +43,22 @@ Rules:
 - Reference specific ${targetJob.companyName} products/values
 - Highlight top matched skills: ${matchedSkills.slice(0, 3).join(', ')}`;
 
-  const response = await getGeminiClient(apiKey).models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: { responseMimeType: 'application/json' },
-  });
-
   try {
+    const response = await getGeminiClient(apiKey).models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { responseMimeType: 'application/json' },
+    });
+
     const cleaned = (response.text || '{}').replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     return OutreachSchema.parse(JSON.parse(cleaned));
-  } catch {
+  } catch (err) {
+    console.warn('Outreach agent fallback:', err);
     return {
-      linkedInConnectionNote: `Hi, I'm ${profile.fullName}, a ${profile.headline} excited about the ${targetJob.roleTitle} role at ${targetJob.companyName}. Would love to connect!`,
-      coldEmailSubject: `${targetJob.roleTitle} Interest — ${profile.fullName}`,
-      coldEmailBody: `Hi,\n\nI'm ${profile.fullName}, a ${profile.headline} with proven experience in ${matchedSkills.slice(0, 2).join(' and ')}.\n\nI'm very interested in the ${targetJob.roleTitle} opportunity at ${targetJob.companyName} and believe my background aligns well.\n\nWould love to discuss further.\n\nBest,\n${profile.fullName}`,
-      linkedInAboutSection: `${profile.summary} Passionate about building impactful software and currently exploring ${targetJob.roleTitle} opportunities.`,
+      linkedInConnectionNote: `Hi, I noticed ${targetJob.companyName}'s work in ${targetJob.roleTitle}. With my background in ${matchedSkills.slice(0, 2).join(' & ')}, I would love to connect!`,
+      coldEmailSubject: `${targetJob.roleTitle} role — ${profile.fullName} application`,
+      coldEmailBody: `Hi Hiring Team,\n\nI am writing to express my strong interest in the ${targetJob.roleTitle} opening at ${targetJob.companyName}.\n\nWith proven experience delivering production software using ${matchedSkills.slice(0, 3).join(', ')}, I believe my technical background aligns directly with your team's goals.\n\nI have attached my tailored resume and would welcome the opportunity to discuss further.\n\nBest regards,\n${profile.fullName}`,
+      linkedInAboutSection: `${profile.summary || 'Software engineer passionate about scalable systems.'} Experienced in ${matchedSkills.slice(0, 4).join(', ')}. Currently targeting ${targetJob.roleTitle} opportunities at innovative teams like ${targetJob.companyName}.`,
     };
   }
 }
