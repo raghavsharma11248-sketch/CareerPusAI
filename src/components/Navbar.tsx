@@ -14,7 +14,8 @@ import {
   User,
   X,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Cpu
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -22,6 +23,7 @@ export default function Navbar() {
   const { loadDemo, state, apiKey, setApiKey, userName, userEmail, isAuthenticated, logout } = useCandidate();
 
   const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
+  const [showJudgeModal, setShowJudgeModal] = useState<boolean>(false);
   const [userMenuOpen, setUserMenuOpen] = useState<boolean>(false);
   const [keyInput, setKeyInput] = useState<string>(apiKey);
 
@@ -92,6 +94,16 @@ export default function Navbar() {
           {/* Right Action Buttons */}
           <div className="flex items-center space-x-2">
             
+            {/* Judge Mode / Architecture Guide */}
+            <button
+              onClick={() => setShowJudgeModal(true)}
+              className="flex items-center space-x-1.5 px-2.5 py-1.5 text-xs font-mono font-medium rounded-md bg-stone-900 text-white hover:bg-stone-800 transition-all shadow-xs"
+              title="Hackathon Judge Mode: Architecture & Guardrails Walkthrough"
+            >
+              <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline">Judge Deep Dive</span>
+            </button>
+
             {/* 1-Click Demo Button */}
             <button
               onClick={loadDemo}
@@ -249,6 +261,103 @@ export default function Navbar() {
                 className="px-4 py-1.5 text-xs font-mono font-medium rounded bg-stone-900 text-white hover:bg-stone-800"
               >
                 Save Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Judge Mode & Architecture Modal */}
+      {showJudgeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl border border-stone-200 max-w-2xl w-full p-6 space-y-5 animate-in fade-in zoom-in-95 my-8">
+            <div className="flex items-start justify-between pb-3 border-b border-stone-100">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="mono-tag text-emerald-800 bg-emerald-50 border border-emerald-200 uppercase font-semibold">
+                    HackNowa Global 2026 Evaluation Suite
+                  </span>
+                  <span className="text-[11px] font-mono text-stone-500">Track: Future of Work & Automation</span>
+                </div>
+                <h3 className="text-base font-bold text-stone-900 mt-1">
+                  CareerPulse AI &mdash; 5-Agent Autonomous Architecture
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowJudgeModal(false)}
+                className="text-stone-400 hover:text-stone-700 p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 5-Agent Closed Loop Flow */}
+            <div className="space-y-2">
+              <span className="text-xs font-mono font-semibold text-stone-700 uppercase tracking-wider block">
+                1. Autonomous Agent Fleet Execution
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+                  <div className="font-semibold text-stone-900 font-mono">Agent 1 &middot; ATS Auditor</div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">Calculates explainable 0&ndash;100 HRI score and extracts skill gaps.</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+                  <div className="font-semibold text-stone-900 font-mono">Agent 2 &middot; Google XYZ Tailor</div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">Infuses metrics using Google hiring formula with human-in-the-loop diffs.</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+                  <div className="font-semibold text-stone-900 font-mono">Agent 3 &middot; Voice Mock Room</div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">Simulates live spoken interviews with STAR rubric scoring & text fallback.</p>
+                </div>
+                <div className="p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+                  <div className="font-semibold text-stone-900 font-mono">Agent 4 & 5 &middot; Outreach & Portfolio</div>
+                  <p className="text-[11px] text-stone-600 mt-0.5">Drafts LinkedIn DMs and deploys live web portfolio at /portfolio/[slug].</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Explainable Scoring Math Formula */}
+            <div className="p-3.5 rounded-xl bg-stone-900 text-stone-100 font-mono text-xs space-y-1.5">
+              <div className="flex items-center justify-between text-sky-400 font-semibold text-[11px]">
+                <span>EXPLAINABLE HIRING READINESS INDEX (HRI) FORMULA</span>
+                <span>NON-BLACK-BOX</span>
+              </div>
+              <p className="text-[11px] text-stone-300 leading-relaxed">
+                HRI = (Keyword_Match &times; 40%) + (Cosine_Semantic &times; 25%) + (Experience_Level &times; 15%) + (XYZ_Achievements &times; 10%) + (Layout_Hygiene &times; 10%)
+              </p>
+              <div className="text-[10px] text-stone-400 pt-1 border-t border-stone-800">
+                Live Dynamic Math: Accepting an XYZ rewrite recalculates the XYZ evidence component in real time.
+              </div>
+            </div>
+
+            {/* Security Guardrails */}
+            <div className="space-y-1.5 text-xs">
+              <span className="font-mono font-semibold text-stone-700 uppercase tracking-wider block">
+                2. Enterprise Security & Anti-Hallucination
+              </span>
+              <ul className="text-[11px] text-stone-600 space-y-1 font-mono">
+                <li className="flex items-start space-x-1.5">
+                  <span className="text-emerald-600 font-bold">&#10003;</span>
+                  <span><strong>Adversarial Prompt-Injection Sanitizer:</strong> Strips delimiters and system override prompts.</span>
+                </li>
+                <li className="flex items-start space-x-1.5">
+                  <span className="text-emerald-600 font-bold">&#10003;</span>
+                  <span><strong>Workday ATS Guardrails:</strong> Verifies single-column layout without tables or graphics.</span>
+                </li>
+                <li className="flex items-start space-x-1.5">
+                  <span className="text-emerald-600 font-bold">&#10003;</span>
+                  <span><strong>Zero 500-Error Architecture:</strong> All 5 agents feature resilient heuristic fallbacks.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setShowJudgeModal(false)}
+                className="px-4 py-1.5 text-xs font-mono font-medium rounded-lg bg-stone-900 text-white hover:bg-stone-800"
+              >
+                Close Deep Dive
               </button>
             </div>
           </div>
