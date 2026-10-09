@@ -1,69 +1,70 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React from 'react';
+import ScoreGauge from '@/components/ScoreGauge';
+import ResumeTailor from '@/components/ResumeTailor';
+import AgentTerminal from '@/components/AgentTerminal';
+import { Sparkles, ArrowRight, ShieldCheck, Cpu } from 'lucide-react';
+import Link from 'next/link';
+
+export default function DashboardPage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      
+      {/* Top Banner: Hackathon Context & Autonomous Value Prop */}
+      <div className="blueprint-card p-4 bg-white/80 border-stone-200">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-stone-900 text-white shrink-0">
+              <Sparkles className="w-5 h-5 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-sm font-semibold text-stone-900">
+                  CareerPulse AI — Autonomous Hiring Readiness System
+                </h1>
+                <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded text-[10px] font-mono bg-sky-100 text-sky-800">
+                  Track: Future of Work
+                </span>
+              </div>
+              <p className="text-xs text-stone-500 mt-0.5">
+                88% of qualified candidates are filtered out by enterprise ATS algorithms (Harvard Business School). CareerPulse uses Google XYZ formulas & Gemini to bridge the readiness gap.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 text-xs font-mono shrink-0">
+            <Link
+              href="/interview"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-stone-900 hover:bg-stone-800 text-white transition-colors"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <span>Mock Interview</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </div>
+
+      {/* 3-Panel Main Layout (Optimus Light Architecture) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        {/* Left Column: ATS Score Gauge & Skill Breakdown (3.5 cols on large screens) */}
+        <div className="lg:col-span-4 xl:col-span-3">
+          <ScoreGauge />
         </div>
-      </main>
+
+        {/* Center Column: Side-by-Side Resume Tailor (5 cols on large screens) */}
+        <div className="lg:col-span-8 xl:col-span-6">
+          <ResumeTailor />
+        </div>
+
+        {/* Right Column: Autonomous Agent Terminal & Fleets (3 cols on large screens) */}
+        <div className="lg:col-span-12 xl:col-span-3">
+          <AgentTerminal />
+        </div>
+
+      </div>
+
     </div>
   );
 }

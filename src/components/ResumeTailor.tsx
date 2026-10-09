@@ -1,0 +1,419 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useCandidate } from '@/lib/context/CandidateContext';
+import { 
+  Sparkles, 
+  Check, 
+  X, 
+  Edit3, 
+  Download, 
+  ArrowRight, 
+  FileText, 
+  RotateCw, 
+  PlusCircle,
+  ExternalLink
+} from 'lucide-react';
+import Link from 'next/link';
+
+export default function ResumeTailor() {
+  const { state, updateBulletStatus, addTerminalLog, isProcessing, setIsProcessing, setState } = useCandidate();
+  const { weakBullets, targetJob } = state;
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [customText, setCustomText] = useState<string>('');
+  const [showInputModal, setShowInputModal] = useState<boolean>(false);
+  const [resumeInput, setResumeInput] = useState<string>('');
+  const [roleInput, setRoleInput] = useState<string>(targetJob.roleTitle);
+  const [companyInput, setCompanyInput] = useState<string>(targetJob.companyName);
+  const [jdInput, setJdInput] = useState<string>(targetJob.rawDescription);
+
+  const pendingCount = weakBullets.filter((b) => b.status === 'pending').length;
+  const acceptedCount = weakBullets.filter((b) => b.status === 'accepted' || b.status === 'customized').length;
+
+  const handleStartEdit = (id: string, currentText: string) => {
+    setEditingId(id);
+    setCustomText(currentText);
+  };
+
+  const handleSaveEdit = (id: string) => {
+    updateBulletStatus(id, 'customized', customText);
+    setEditingId(null);
+  };
+
+  const handleRunAudit = async () => {
+    if (!resumeInput.trim() || !jdInput.trim()) {
+      alert('Please provide both resume text and job description.');
+      return;
+    }
+
+    setIsProcessing(true);
+    addTerminalLog('Agent 1 (Auditor)', `Analyzing resume against ${roleInput} @ ${companyInput}...`, 'info');
+
+    try {
+      const res = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: resumeInput,
+          targetJob: {
+            ...targetJob,
+            roleTitle: roleInput,
+            companyName: companyInput,
+            rawDescription: jdInput,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setState((prev) => ({
+          ...prev,
+          rawResumeText: resumeInput,
+          targetJob: {
+            ...prev.targetJob,
+            roleTitle: roleInput,
+            companyName: companyInput,
+            rawDescription: jdInput,
+          },
+          atsScore: data.score,
+          weakBullets: data.weakBullets,
+        }));
+        addTerminalLog('Agent 1 (Auditor)', `Audit complete. Score: ${data.score.overall}/100. Identified ${data.weakBullets.length} weak achievement bullets.`, 'success');
+        setShowInputModal(false);
+      } else {
+        addTerminalLog('Agent 1 (Auditor)', `Audit failed: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      addTerminalLog('Agent 1 (Auditor)', `Audit network error: ${String(err)}`, 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    window.print();
+    addTerminalLog('System', 'Generated clean printable/PDF view of candidate resume.', 'info');
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Panel Header & Action Bar */}
+      <div className="blueprint-card p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="mono-tag text-stone-500 uppercase tracking-wider">Agent 2 · Resume Tailor</span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-50 text-sky-700 border border-sky-200">
+                Google XYZ Formula
+              </span>
+            </div>
+            <h2 className="text-base font-semibold text-stone-900 mt-0.5">
+              Side-by-Side Bullet Optimizer
+            </h2>
+            <p className="text-xs text-stone-500">
+              Transform passive descriptions into quantified accomplishments: <code className="text-stone-700 font-mono bg-stone-100 px-1 py-0.5 rounded">[Accomplished X by Y resulting in Z]</code>
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowInputModal(true)}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>New Audit</span>
+            </button>
+
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-medium bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 transition-colors"
+              title="Export Clean Single-Column PDF"
+            >
+              <Download className="w-3.5 h-3.5 text-stone-600" />
+              <span>Export PDF</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Status Counter */}
+        <div className="flex items-center space-x-4 mt-3 pt-3 border-t border-stone-100 text-xs font-mono">
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="text-stone-600">Pending Diffs:</span>
+            <span className="font-semibold text-stone-900">{pendingCount}</span>
+          </div>
+          <div className="flex items-center space-x-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-stone-600">Accepted:</span>
+            <span className="font-semibold text-stone-900">{acceptedCount}</span>
+          </div>
+          <div className="flex items-center space-x-1.5 text-stone-400">
+            <span>Total:</span>
+            <span>{weakBullets.length}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bullets List */}
+      <div className="space-y-3">
+        {weakBullets.map((bullet, index) => {
+          const isPending = bullet.status === 'pending';
+          const isAccepted = bullet.status === 'accepted';
+          const isCustomized = bullet.status === 'customized';
+          const isRejected = bullet.status === 'rejected';
+
+          return (
+            <div
+              key={bullet.id}
+              className={`blueprint-card p-4 transition-all ${
+                isAccepted || isCustomized
+                  ? 'border-emerald-200 bg-emerald-50/20'
+                  : isRejected
+                  ? 'opacity-60 border-stone-200 bg-stone-50'
+                  : 'border-amber-200/80 bg-white'
+              }`}
+            >
+              {/* Card Meta Header */}
+              <div className="flex items-center justify-between text-xs mb-2.5">
+                <div className="flex items-center space-x-2">
+                  <span className="font-mono text-stone-400">#{index + 1}</span>
+                  <span className="font-medium text-stone-800">{bullet.company || 'Experience'}</span>
+                  <span className="mono-tag px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
+                    {bullet.section}
+                  </span>
+                </div>
+
+                {/* Status Badges */}
+                <div>
+                  {isAccepted && (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-100 text-emerald-800">
+                      <Check className="w-3 h-3" />
+                      <span>ACCEPTED</span>
+                    </span>
+                  )}
+                  {isCustomized && (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-100 text-emerald-800">
+                      <Check className="w-3 h-3" />
+                      <span>CUSTOMIZED</span>
+                    </span>
+                  )}
+                  {isRejected && (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-mono bg-stone-200 text-stone-600">
+                      <X className="w-3 h-3" />
+                      <span>REJECTED</span>
+                    </span>
+                  )}
+                  {isPending && (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[11px] font-mono bg-amber-100 text-amber-800">
+                      <span>PENDING HUMAN REVIEW</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Diff View */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {/* Original Weak Bullet */}
+                <div className="p-3 rounded bg-rose-50/60 border border-rose-200/60 space-y-1">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-rose-700">
+                    <span>BEFORE (ATS RISKY)</span>
+                    <span className="text-rose-600">Missing Metrics</span>
+                  </div>
+                  <p className="text-stone-800 font-sans leading-relaxed">
+                    {bullet.originalText}
+                  </p>
+                  {bullet.passiveVerbs.length > 0 && (
+                    <div className="text-[10px] font-mono text-rose-600 pt-1">
+                      Passive verbs flagged: {bullet.passiveVerbs.join(', ')}
+                    </div>
+                  )}
+                </div>
+
+                {/* Suggested Google XYZ Bullet */}
+                <div className="p-3 rounded bg-emerald-50/60 border border-emerald-200/60 space-y-1">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-emerald-700">
+                    <span className="flex items-center space-x-1">
+                      <Sparkles className="w-3 h-3" />
+                      <span>AFTER (GOOGLE XYZ FORMULA)</span>
+                    </span>
+                    <span className="text-emerald-700 font-medium">+10% HRI</span>
+                  </div>
+
+                  {editingId === bullet.id ? (
+                    <div className="space-y-2 pt-1">
+                      <textarea
+                        value={customText}
+                        onChange={(e) => setCustomText(e.target.value)}
+                        className="w-full text-xs p-2 rounded border border-emerald-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
+                        rows={3}
+                      />
+                      <div className="flex justify-end space-x-1.5">
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="px-2 py-1 text-[11px] font-mono rounded bg-stone-200 text-stone-700 hover:bg-stone-300"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => handleSaveEdit(bullet.id)}
+                          className="px-2 py-1 text-[11px] font-mono rounded bg-emerald-600 text-white hover:bg-emerald-700"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-stone-900 font-sans font-medium leading-relaxed">
+                      {bullet.customText || bullet.suggestedXYZ || 'Generating Google XYZ rewrite...'}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Human-In-The-Loop Action Bar */}
+              {editingId !== bullet.id && (
+                <div className="flex items-center justify-end space-x-2 mt-3 pt-2.5 border-t border-stone-100 text-xs">
+                  <button
+                    onClick={() => handleStartEdit(bullet.id, bullet.customText || bullet.suggestedXYZ || '')}
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded text-stone-600 hover:text-stone-900 hover:bg-stone-100 font-mono transition-colors"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Customize</span>
+                  </button>
+
+                  <button
+                    onClick={() => updateBulletStatus(bullet.id, 'rejected')}
+                    className="flex items-center space-x-1 px-2.5 py-1 rounded text-rose-600 hover:text-rose-800 hover:bg-rose-50 font-mono transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                    <span>Reject</span>
+                  </button>
+
+                  <button
+                    onClick={() => updateBulletStatus(bullet.id, 'accepted')}
+                    className={`flex items-center space-x-1 px-3 py-1 rounded font-mono font-medium transition-all ${
+                      isAccepted
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-600 hover:text-white border border-emerald-300'
+                    }`}
+                  >
+                    <Check className="w-3 h-3" />
+                    <span>{isAccepted ? 'Applied' : 'Accept (Apply)'}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Next Step Callout */}
+      <div className="blueprint-card p-4 bg-gradient-to-r from-stone-50 to-sky-50/50 border-sky-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h4 className="text-xs font-semibold text-stone-900">Next Recommended Action</h4>
+            <p className="text-xs text-stone-600 mt-0.5">
+              Practice interview responses for missing skills in the Mock Room.
+            </p>
+          </div>
+          <Link
+            href="/interview"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-sky-700 text-white hover:bg-sky-800 transition-colors shadow-xs"
+          >
+            <span>Launch Mock Room</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      </div>
+
+      {/* Input Modal for Custom Audit */}
+      {showInputModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-stone-200 max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+              <h3 className="text-base font-semibold text-stone-900">Run Autonomous ATS Audit</h3>
+              <button
+                onClick={() => setShowInputModal(false)}
+                className="text-stone-400 hover:text-stone-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-mono text-stone-600 mb-1">Target Role</label>
+                <input
+                  type="text"
+                  value={roleInput}
+                  onChange={(e) => setRoleInput(e.target.value)}
+                  className="w-full text-xs p-2 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900"
+                  placeholder="e.g. Senior Frontend Engineer"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-mono text-stone-600 mb-1">Company</label>
+                <input
+                  type="text"
+                  value={companyInput}
+                  onChange={(e) => setCompanyInput(e.target.value)}
+                  className="w-full text-xs p-2 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900"
+                  placeholder="e.g. Stripe"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-stone-600 mb-1">Paste Job Description</label>
+              <textarea
+                value={jdInput}
+                onChange={(e) => setJdInput(e.target.value)}
+                rows={4}
+                className="w-full text-xs p-2 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans"
+                placeholder="Paste the target job description requirements here..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono text-stone-600 mb-1">Paste Resume Text</label>
+              <textarea
+                value={resumeInput}
+                onChange={(e) => setResumeInput(e.target.value)}
+                rows={6}
+                className="w-full text-xs p-2 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans"
+                placeholder="Paste your resume text here (experience bullets, skills, education)..."
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2 border-t border-stone-100">
+              <button
+                onClick={() => setShowInputModal(false)}
+                className="px-3 py-1.5 text-xs font-mono rounded bg-stone-100 text-stone-700 hover:bg-stone-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRunAudit}
+                disabled={isProcessing}
+                className="flex items-center space-x-1.5 px-4 py-1.5 text-xs font-medium rounded bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Auditing with Gemini...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Run Gemini Audit</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
