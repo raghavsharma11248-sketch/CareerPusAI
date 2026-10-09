@@ -15,99 +15,65 @@ export interface TerminalLog {
 const DEFAULT_STATE: CandidateState = {
   rawResumeText: '',
   targetJob: {
-    roleTitle: 'Senior Frontend Engineer',
-    companyName: 'Stripe',
+    roleTitle: 'Target Role (e.g. Senior Frontend Engineer)',
+    companyName: 'Target Company',
     rawDescription: DEMO_JOB_DESCRIPTION,
-    requiredSkills: ['React', 'TypeScript', 'Performance Optimization', 'Jest', 'Accessibility'],
-    niceToHaveSkills: ['Next.js', 'Playwright'],
+    requiredSkills: ['React', 'TypeScript', 'System Design', 'Testing', 'Web Performance'],
+    niceToHaveSkills: ['Next.js', 'Accessibility'],
     experienceLevel: 'senior',
   },
   candidateProfile: {
-    fullName: 'Alex Chen',
-    email: 'alex.chen@email.com',
-    headline: 'Frontend Engineer · React & TypeScript Specialist',
-    summary: 'Experienced software engineer focused on building responsive, high-performance web applications.',
-    location: 'San Francisco, CA',
-    linkedin: 'linkedin.com/in/alexchen',
-    github: 'github.com/alexchen',
+    fullName: 'Candidate Profile',
+    email: 'candidate@gmail.com',
+    headline: 'Software Engineer',
+    summary: 'Awaiting resume upload to analyze candidate experience and skill alignment.',
+    location: '',
   },
   atsScore: {
-    overall: 42,
-    keywordAlignment: 35,
-    semanticRelevance: 50,
-    experienceRelevance: 40,
-    achievementEvidence: 15,
-    hygieneCompleteness: 70,
-    matchedSkills: ['React', 'JavaScript', 'Node.js', 'Git'],
-    missingSkills: ['TypeScript', 'Jest', 'Cypress', 'WCAG', 'Core Web Vitals'],
+    overall: 0,
+    keywordAlignment: 0,
+    semanticRelevance: 0,
+    experienceRelevance: 0,
+    achievementEvidence: 0,
+    hygieneCompleteness: 0,
+    matchedSkills: [],
+    missingSkills: [],
     hygieneFeedback: [
-      'Missing TypeScript in skills — required by 4+ JD requirements',
-      'Bullets lack quantifiable metrics (X achieved by doing Y as measured by Z)',
-      'Replace passive verbs ("worked on", "helped") with strong action verbs',
+      'Awaiting candidate resume upload...',
+      'System ready to audit against Workday & Greenhouse ATS rules',
+      'Prompt-injection defense firewall active',
     ],
   },
-  weakBullets: DEMO_CANDIDATE_STATE.weakBullets || [],
-  interviewGaps: DEMO_CANDIDATE_STATE.interviewGaps || [],
+  weakBullets: [],
+  interviewGaps: [],
   outreachDrafts: {
-    linkedInConnectionNote: 'Hi! I noticed Stripe\'s search for a Senior Frontend Engineer on the Payments team. With 3+ years in high-throughput React UIs and performance optimization, I\'d love to connect and follow your work!',
-    coldEmailSubject: 'Senior Frontend Engineer — Alex Chen (React / Web Performance)',
-    coldEmailBody: 'Hi Stripe Recruiting Team,\n\nI recently came across the Senior Frontend Engineer role on the Payments team. Having spent 3 years engineering scalable React interfaces and optimizing Core Web Vitals, I\'m deeply impressed by Stripe\'s engineering bar.\n\nI\'ve tailored my portfolio and key project case studies specifically for this opening.\n\nBest regards,\nAlex Chen',
-    linkedInAboutSection: 'Frontend Engineer specializing in React, TypeScript, and modern web performance. Dedicated to crafting accessible, pixel-perfect user experiences that scale seamlessly across millions of users.',
+    linkedInConnectionNote: '',
+    coldEmailSubject: '',
+    coldEmailBody: '',
+    linkedInAboutSection: '',
   },
   portfolioData: {
-    slug: 'alex-chen-stripe-2026',
-    name: 'Alex Chen',
-    headline: 'Senior Frontend Engineer · Payments & Web Performance',
-    about: 'Software engineer passionate about building frictionless payment flows, design systems, and hyper-optimized React architectures.',
-    skills: ['React', 'TypeScript', 'Next.js', 'Node.js', 'Performance Optimization', 'WCAG 2.1'],
-    projects: [
-      {
-        title: 'High-Throughput Checkout Redesign',
-        description: 'Engineered modular payment UI components reducing checkout latency by 38% and boosting conversion rates.',
-        techStack: ['React', 'TypeScript', 'Tailwind', 'Stripe Elements'],
-        liveLink: 'https://demo.stripe.com',
-        githubLink: 'https://github.com/alexchen/checkout-core',
-      },
-      {
-        title: 'Accessible Design System Engine',
-        description: 'Architected 40+ WCAG 2.1 AA compliant UI components with comprehensive automated test suites.',
-        techStack: ['TypeScript', 'Storybook', 'Jest', 'Axe-core'],
-        githubLink: 'https://github.com/alexchen/accessible-design-tokens',
-      },
-    ],
-    experience: [
-      {
-        role: 'Software Engineer',
-        company: 'TechCorp Inc.',
-        duration: '2022 – Present',
-        bullets: [
-          'Architected reusable React component library with TypeScript, reducing checkout drop-off by 18%.',
-          'Optimized Core Web Vitals, improving Largest Contentful Paint (LCP) from 3.4s to 1.1s.',
-        ],
-      },
-    ],
-    education: [
-      {
-        degree: 'B.S. in Computer Science',
-        institution: 'UC Berkeley',
-        year: '2021',
-      },
-    ],
-    contactEmail: 'alex.chen@email.com',
-    linkedin: 'linkedin.com/in/alexchen',
-    github: 'github.com/alexchen',
+    slug: 'demo-portfolio',
+    name: 'Candidate',
+    headline: 'Software Engineer',
+    about: '',
+    skills: [],
+    projects: [],
+    experience: [],
+    education: [],
+    contactEmail: '',
   },
-  sessionId: 'session_demo_2026',
+  sessionId: 'session_ready',
   createdAt: new Date().toISOString(),
   lastUpdated: new Date().toISOString(),
-  isDemo: true,
-  demoPresetId: 'stripe-senior-frontend-2026',
+  isDemo: false,
 };
 
 interface CandidateContextType {
   state: CandidateState;
   setState: React.Dispatch<React.SetStateAction<CandidateState>>;
   loadDemo: () => void;
+  resetToGuide: () => void;
   updateBulletStatus: (id: string, status: 'accepted' | 'rejected' | 'customized', customText?: string) => void;
   addTerminalLog: (agent: string, message: string, type?: TerminalLog['type']) => void;
   terminalLogs: TerminalLog[];
@@ -212,15 +178,27 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loadDemo = () => {
-    setState((prev) => ({
+    setState({
       ...DEFAULT_STATE,
+      ...DEMO_CANDIDATE_STATE,
       rawResumeText: DEMO_RESUME_TEXT,
+      weakBullets: DEMO_CANDIDATE_STATE.weakBullets || [],
+      atsScore: DEMO_CANDIDATE_STATE.atsScore || DEFAULT_STATE.atsScore,
+      targetJob: DEMO_CANDIDATE_STATE.targetJob || DEFAULT_STATE.targetJob,
+      candidateProfile: DEMO_CANDIDATE_STATE.candidateProfile || DEFAULT_STATE.candidateProfile,
+      interviewGaps: DEMO_CANDIDATE_STATE.interviewGaps || [],
       lastUpdated: new Date().toISOString(),
-    }));
+      isDemo: true,
+    } as CandidateState);
     addTerminalLog('System', 'Preloaded complete Stripe demo candidate preset.', 'success');
-    addTerminalLog('Agent 1 (Auditor)', 'Parsed 4 weak achievement bullets. Explainable ATS score computed: 42/100.', 'info');
+    addTerminalLog('Agent 1 (Auditor)', 'Parsed 3 weak achievement bullets. Explainable ATS score computed: 42/100.', 'info');
     addTerminalLog('Agent 2 (Tailor)', 'Google XYZ formula drafts generated for 3 pending experience items.', 'info');
     addTerminalLog('Agent 3 (Interview)', 'Identified 3 high-priority technical & behavioral interview gaps.', 'info');
+  };
+
+  const resetToGuide = () => {
+    setState(DEFAULT_STATE);
+    addTerminalLog('System', 'Returned to Guide mode.', 'info');
   };
 
   const updateBulletStatus = (
@@ -281,6 +259,7 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
         state,
         setState,
         loadDemo,
+        resetToGuide,
         updateBulletStatus,
         addTerminalLog,
         terminalLogs,

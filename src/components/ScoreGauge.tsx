@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { useCandidate } from '@/lib/context/CandidateContext';
-import { CheckCircle2, AlertTriangle, Info, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Info, ChevronDown, ChevronUp, ShieldCheck, Sparkles, FileSearch } from 'lucide-react';
 
 export default function ScoreGauge() {
   const { state } = useCandidate();
-  const { atsScore, targetJob, candidateProfile } = state;
-  const [showFormula, setShowFormula] = useState(false);
+  const { atsScore, targetJob, candidateProfile, weakBullets } = state;
+  const isAnalyzed = weakBullets.length > 0;
+  const [showFormula, setShowFormula] = useState(!isAnalyzed); // expanded by default in guide mode
 
   // Score color logic
   const score = atsScore.overall;
@@ -15,7 +16,11 @@ export default function ScoreGauge() {
   let badgeColor = 'text-amber-700 bg-amber-50 border-amber-200';
   let ratingText = 'Needs Optimization';
 
-  if (score >= 75) {
+  if (!isAnalyzed) {
+    strokeColor = '#d6d3d1';
+    badgeColor = 'text-stone-700 bg-stone-100 border-stone-200';
+    ratingText = 'Awaiting Resume';
+  } else if (score >= 75) {
     strokeColor = '#10b981'; // emerald
     badgeColor = 'text-emerald-700 bg-emerald-50 border-emerald-200';
     ratingText = 'Interview Ready';
@@ -28,7 +33,7 @@ export default function ScoreGauge() {
   // SVG Gauge math
   const radius = 68;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const strokeDashoffset = isAnalyzed ? circumference - (score / 100) * circumference : circumference * 0.95;
 
   return (
     <div className="space-y-4">
@@ -37,11 +42,15 @@ export default function ScoreGauge() {
         <div className="flex items-start justify-between">
           <div>
             <span className="mono-tag text-stone-500 uppercase tracking-wider block">Target Opening</span>
-            <h3 className="font-semibold text-stone-900 text-sm mt-0.5">{targetJob.roleTitle}</h3>
-            <p className="text-xs text-stone-600 font-mono mt-0.5">@{targetJob.companyName} · {targetJob.experienceLevel.toUpperCase()}</p>
+            <h3 className="font-semibold text-stone-900 text-sm mt-0.5">
+              {isAnalyzed ? targetJob.roleTitle : 'Agent 1 · ATS Auditor'}
+            </h3>
+            <p className="text-xs text-stone-600 font-mono mt-0.5">
+              {isAnalyzed ? `@${targetJob.companyName} · ${targetJob.experienceLevel.toUpperCase()}` : 'Awaiting Resume & Job Description'}
+            </p>
           </div>
           <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-stone-100 text-stone-700 border border-stone-200">
-            {candidateProfile.fullName}
+            {isAnalyzed ? candidateProfile.fullName : 'Ready to Audit'}
           </span>
         </div>
       </div>
@@ -80,13 +89,17 @@ export default function ScoreGauge() {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-4xl font-extrabold text-stone-900 font-mono tracking-tight">{score}</span>
+            <span className="text-4xl font-extrabold text-stone-900 font-mono tracking-tight">
+              {isAnalyzed ? score : '--'}
+            </span>
             <span className="text-[11px] font-mono text-stone-500 uppercase tracking-widest mt-0.5">/ 100 HRI</span>
           </div>
         </div>
 
         <p className="text-xs text-stone-600 mt-1">
-          Hiring Readiness Index based on Harvard Business School ATS criteria.
+          {isAnalyzed
+            ? 'Hiring Readiness Index based on Harvard Business School ATS research.'
+            : 'Audits resumes against 5 explainable dimensions instead of black-box guessing.'}
         </p>
 
         {/* Toggle Formula Breakdown */}
@@ -104,42 +117,52 @@ export default function ScoreGauge() {
           <div className="mt-4 pt-3 border-t border-stone-100 text-left space-y-2.5">
             <div className="flex justify-between text-xs">
               <span className="text-stone-600">Keyword Alignment (40%)</span>
-              <span className="font-mono font-semibold text-stone-900">{atsScore.keywordAlignment}%</span>
+              <span className="font-mono font-semibold text-stone-900">
+                {isAnalyzed ? `${atsScore.keywordAlignment}%` : 'Required skills in JD'}
+              </span>
             </div>
             <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-sky-600 h-full rounded-full" style={{ width: `${atsScore.keywordAlignment}%` }} />
+              <div className="bg-sky-600 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.keywordAlignment : 40}%` }} />
             </div>
 
             <div className="flex justify-between text-xs">
               <span className="text-stone-600">Semantic Cosine Distance (25%)</span>
-              <span className="font-mono font-semibold text-stone-900">{atsScore.semanticRelevance}%</span>
+              <span className="font-mono font-semibold text-stone-900">
+                {isAnalyzed ? `${atsScore.semanticRelevance}%` : 'Vector similarity'}
+              </span>
             </div>
             <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-purple-600 h-full rounded-full" style={{ width: `${atsScore.semanticRelevance}%` }} />
+              <div className="bg-purple-600 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.semanticRelevance : 25}%` }} />
             </div>
 
             <div className="flex justify-between text-xs">
               <span className="text-stone-600">Experience Level Match (15%)</span>
-              <span className="font-mono font-semibold text-stone-900">{atsScore.experienceRelevance}%</span>
+              <span className="font-mono font-semibold text-stone-900">
+                {isAnalyzed ? `${atsScore.experienceRelevance}%` : 'Years & seniority'}
+              </span>
             </div>
             <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${atsScore.experienceRelevance}%` }} />
+              <div className="bg-amber-500 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.experienceRelevance : 15}%` }} />
             </div>
 
             <div className="flex justify-between text-xs">
               <span className="text-stone-600">Google XYZ Evidence (10%)</span>
-              <span className="font-mono font-semibold text-stone-900">{atsScore.achievementEvidence}%</span>
+              <span className="font-mono font-semibold text-stone-900">
+                {isAnalyzed ? `${atsScore.achievementEvidence}%` : 'Quantified metrics'}
+              </span>
             </div>
             <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${atsScore.achievementEvidence}%` }} />
+              <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.achievementEvidence : 10}%` }} />
             </div>
 
             <div className="flex justify-between text-xs">
               <span className="text-stone-600">ATS Hygiene Completeness (10%)</span>
-              <span className="font-mono font-semibold text-stone-900">{atsScore.hygieneCompleteness}%</span>
+              <span className="font-mono font-semibold text-stone-900">
+                {isAnalyzed ? `${atsScore.hygieneCompleteness}%` : 'Single-column layout'}
+              </span>
             </div>
             <div className="w-full bg-stone-100 h-1.5 rounded-full overflow-hidden">
-              <div className="bg-stone-700 h-full rounded-full" style={{ width: `${atsScore.hygieneCompleteness}%` }} />
+              <div className="bg-stone-700 h-full rounded-full" style={{ width: `${isAnalyzed ? atsScore.hygieneCompleteness : 10}%` }} />
             </div>
           </div>
         )}
@@ -149,35 +172,49 @@ export default function ScoreGauge() {
       <div className="blueprint-card p-4 space-y-3">
         <span className="mono-tag text-stone-500 uppercase tracking-wider block">Skill Gap Analysis</span>
         
-        {/* Matched Skills */}
-        <div>
-          <span className="text-xs font-semibold text-stone-700 flex items-center mb-1.5">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mr-1" />
-            Matched Skills ({atsScore.matchedSkills.length})
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {atsScore.matchedSkills.map((s) => (
-              <span key={s} className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
-                {s}
+        {isAnalyzed ? (
+          <>
+            {/* Matched Skills */}
+            <div>
+              <span className="text-xs font-semibold text-stone-700 flex items-center mb-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mr-1" />
+                Matched Skills ({atsScore.matchedSkills.length})
               </span>
-            ))}
-          </div>
-        </div>
+              <div className="flex flex-wrap gap-1">
+                {atsScore.matchedSkills.map((s) => (
+                  <span key={s} className="px-2 py-0.5 rounded text-[11px] font-mono bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
 
-        {/* Missing Skills */}
-        <div>
-          <span className="text-xs font-semibold text-stone-700 flex items-center mb-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mr-1" />
-            Missing From Resume ({atsScore.missingSkills.length})
-          </span>
-          <div className="flex flex-wrap gap-1">
-            {atsScore.missingSkills.map((s) => (
-              <span key={s} className="px-2 py-0.5 rounded text-[11px] font-mono bg-rose-50 text-rose-800 border border-rose-200">
-                {s}
+            {/* Missing Skills */}
+            <div>
+              <span className="text-xs font-semibold text-stone-700 flex items-center mb-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mr-1" />
+                Missing From Resume ({atsScore.missingSkills.length})
               </span>
-            ))}
+              <div className="flex flex-wrap gap-1">
+                {atsScore.missingSkills.map((s) => (
+                  <span key={s} className="px-2 py-0.5 rounded text-[11px] font-mono bg-rose-50 text-rose-800 border border-rose-200">
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-xs text-stone-600 space-y-1.5 bg-stone-50 p-3 rounded border border-stone-200">
+            <p className="font-medium text-stone-800 flex items-center">
+              <FileSearch className="w-3.5 h-3.5 text-sky-600 mr-1.5" />
+              How Gap Detection Works:
+            </p>
+            <p className="text-[11px] text-stone-600 leading-relaxed">
+              Agent 1 extracts required and nice-to-have skills from the target job opening, compares them with your resume, and marks matches in green and gaps in red.
+            </p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Hygiene & Security Guardrail Card */}
