@@ -3,6 +3,7 @@ import { generateInterviewQuestions, evaluateAnswer } from '@/lib/agents/agent3-
 
 export async function POST(req: NextRequest) {
   try {
+    const customApiKey = req.headers.get('x-gemini-key') || undefined;
     const body = await req.json();
     const { action } = body;
 
@@ -11,7 +12,8 @@ export async function POST(req: NextRequest) {
       const questions = await generateInterviewQuestions(
         missingSkills || ['Technical Skills', 'Team Collaboration'],
         roleTitle || 'Software Engineer',
-        companyName || 'Target Company'
+        companyName || 'Target Company',
+        customApiKey
       );
       return NextResponse.json({ success: true, questions });
     }
@@ -24,7 +26,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      const evaluation = await evaluateAnswer(question, userAnswer, skillContext || 'General');
+      const evaluation = await evaluateAnswer(question, userAnswer, skillContext || 'General', customApiKey);
       return NextResponse.json({ success: true, evaluation });
     }
 

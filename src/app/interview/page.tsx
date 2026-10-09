@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 export default function InterviewRoomPage() {
-  const { state, addTerminalLog } = useCandidate();
+  const { state, addTerminalLog, apiKey } = useCandidate();
   const { interviewGaps, targetJob } = state;
 
   const [selectedGapIndex, setSelectedGapIndex] = useState<number>(0);
@@ -104,10 +104,13 @@ export default function InterviewRoomPage() {
     setIsEvaluating(true);
     addTerminalLog('Agent 3 (Evaluator)', `Evaluating candidate answer with STAR Rubric...`, 'info');
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-gemini-key'] = apiKey;
+
     try {
       const res = await fetch('/api/interview', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'evaluate',
           question: currentGap.question,
@@ -266,6 +269,23 @@ export default function InterviewRoomPage() {
                   </span>
                 )}
               </div>
+
+              {/* Live Audio Waveform Visualizer */}
+              {isVoiceMode && isRecording && (
+                <div className="p-3 bg-stone-900 rounded-lg flex items-center justify-center space-x-1.5 h-12 overflow-hidden shadow-inner">
+                  {[24, 40, 16, 32, 48, 20, 36, 44, 28, 52, 18, 38, 46, 22, 34, 42, 26, 50, 16, 30, 48, 24, 38, 20].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-gradient-to-t from-emerald-500 to-sky-400 rounded-full animate-pulse"
+                      style={{
+                        height: `${h}px`,
+                        animationDuration: `${0.4 + (i % 5) * 0.15}s`,
+                        animationDelay: `${(i % 4) * 0.1}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {/* Textarea for transcript / typing */}
               <textarea

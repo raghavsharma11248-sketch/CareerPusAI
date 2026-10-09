@@ -4,6 +4,7 @@ import type { CandidateProfile, TargetJob } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
+    const customApiKey = req.headers.get('x-gemini-key') || undefined;
     const body = await req.json();
     const { candidateProfile, targetJob, rawResumeText } = body as {
       candidateProfile: CandidateProfile;
@@ -21,7 +22,8 @@ export async function POST(req: NextRequest) {
     const portfolio = await generatePortfolio(
       candidateProfile,
       targetJob,
-      rawResumeText || ''
+      rawResumeText || '',
+      customApiKey
     );
 
     return NextResponse.json({ success: true, portfolio });

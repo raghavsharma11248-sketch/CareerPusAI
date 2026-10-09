@@ -40,7 +40,8 @@ function sanitizeInput(text: string): string {
 
 export async function runSemanticAudit(
   resumeText: string,
-  targetJob: TargetJob
+  targetJob: TargetJob,
+  apiKey?: string
 ): Promise<{ score: ExplainableScore; weakBullets: WeakBullet[] }> {
   const safeResume = sanitizeInput(resumeText);
   const safeJD = sanitizeInput(targetJob.rawDescription);
@@ -83,7 +84,7 @@ Return ONLY valid JSON matching this exact schema:
 Focus on identifying ALL weak bullets (no metrics, passive verbs, vague language).
 Be specific and actionable in the XYZ suggestions.`;
 
-  const response = await getGeminiClient().models.generateContent({
+  const response = await getGeminiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json' },

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCandidate } from '@/lib/context/CandidateContext';
@@ -11,12 +11,24 @@ import {
   Globe, 
   LayoutDashboard, 
   RotateCcw,
-  Zap
+  Zap,
+  Key,
+  User,
+  ShieldCheck,
+  X,
+  Check
 } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { loadDemo, state } = useCandidate();
+  const { loadDemo, state, apiKey, setApiKey, userEmail, isAuthenticated, loginWithEmail, logout } = useCandidate();
+
+  const [showKeyModal, setShowKeyModal] = useState<boolean>(false);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [keyInput, setKeyInput] = useState<string>(apiKey);
+  const [emailInput, setEmailInput] = useState<string>('');
+  const [authError, setAuthError] = useState<string>('');
+  const [authSuccess, setAuthSuccess] = useState<string>('');
 
   const navLinks = [
     { href: '/', label: 'Auditor & Tailor', icon: LayoutDashboard },
@@ -24,6 +36,24 @@ export default function Navbar() {
     { href: '/outreach', label: 'Recruiter DMs', icon: Send },
     { href: `/portfolio/${state.portfolioData?.slug || 'alex-chen-stripe-2026'}`, label: 'Live Portfolio', icon: Globe },
   ];
+
+  const handleSaveKey = () => {
+    setApiKey(keyInput.trim());
+    setShowKeyModal(false);
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthSuccess('');
+    const result = loginWithEmail(emailInput);
+    if (!result.success) {
+      setAuthError(result.error || 'Authentication rejected');
+    } else {
+      setAuthSuccess('Verified and authenticated!');
+      setTimeout(() => setShowAuthModal(false), 1200);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-[#fafaf9]/90 backdrop-blur-md border-b border-stone-200">
@@ -78,7 +108,8 @@ export default function Navbar() {
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center space-x-2.5">
+          <div className="flex items-center space-x-2">
+            
             {/* 1-Click Demo Button */}
             <button
               onClick={loadDemo}
@@ -89,11 +120,32 @@ export default function Navbar() {
               <span className="hidden sm:inline">1-Click Demo</span>
             </button>
 
-            {/* Model Badge */}
-            <div className="hidden sm:flex items-center space-x-1 px-2 py-1 rounded bg-sky-50 border border-sky-200 text-[11px] font-mono text-sky-800">
-              <Zap className="w-3 h-3 text-sky-600 fill-sky-600" />
-              <span>Gemini 2.5</span>
-            </div>
+            {/* API Key Modal Button */}
+            <button
+              onClick={() => {
+                setKeyInput(apiKey);
+                setShowKeyModal(true);
+              }}
+              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-md text-xs font-mono border transition-colors ${
+                apiKey
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
+              }`}
+              title="Configure Google Gemini API Key"
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{apiKey ? 'Gemini Key Configured' : 'Set Gemini Key'}</span>
+            </button>
+
+            {/* Verified Candidate Auth Pill */}
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="hidden md:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md text-xs font-mono bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-800"
+              title="Verified Candidate Authentication"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="max-w-[110px] truncate">{userEmail || 'Sign In'}</span>
+            </button>
 
             {/* GitHub Repo */}
             <a
@@ -111,6 +163,135 @@ export default function Navbar() {
 
         </div>
       </div>
+
+      {/* API Key Modal */}
+      {showKeyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-stone-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <div className="flex items-center space-x-2">
+                <Key className="w-4 h-4 text-sky-600" />
+                <h3 className="font-semibold text-stone-900 text-sm">Google Gemini API Key</h3>
+              </div>
+              <button onClick={() => setShowKeyModal(false)} className="text-stone-400 hover:text-stone-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Enter your Gemini API key from <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-sky-700 underline font-medium">Google AI Studio</a>. It is stored only in your local browser session.
+            </p>
+
+            <div>
+              <input
+                type="password"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full text-xs font-mono p-2.5 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2 border-t border-stone-100">
+              <button
+                onClick={() => setShowKeyModal(false)}
+                className="px-3 py-1.5 text-xs font-mono rounded bg-stone-100 text-stone-700 hover:bg-stone-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveKey}
+                className="px-4 py-1.5 text-xs font-mono font-medium rounded bg-stone-900 text-white hover:bg-stone-800"
+              >
+                Save Key
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trusted Auth Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-stone-200 max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-semibold text-stone-900 text-sm">Trusted Candidate Authentication</h3>
+              </div>
+              <button onClick={() => setShowAuthModal(false)} className="text-stone-400 hover:text-stone-600">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-3 rounded bg-amber-50 border border-amber-200 text-xs text-amber-800 space-y-1">
+              <span className="font-semibold block">Candidate Security Policy:</span>
+              <p>
+                To protect candidate PII and prevent fake submissions, only verified domains (<code className="font-mono bg-white px-1 py-0.5 rounded">@gmail.com</code>, <code className="font-mono bg-white px-1 py-0.5 rounded">@outlook.com</code>, <code className="font-mono bg-white px-1 py-0.5 rounded">@yahoo.com</code>, <code className="font-mono bg-white px-1 py-0.5 rounded">@icloud.com</code>) are permitted.
+              </p>
+            </div>
+
+            {isAuthenticated && userEmail && (
+              <div className="p-3 rounded bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
+                <div>
+                  <span className="font-semibold block">Currently Authenticated:</span>
+                  <span className="font-mono">{userEmail}</span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="px-2 py-1 text-[11px] font-mono rounded bg-white text-rose-700 hover:bg-rose-50 border border-rose-200"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
+
+            <form onSubmit={handleLogin} className="space-y-3 pt-1">
+              <div>
+                <label className="block text-xs font-mono text-stone-600 mb-1">Enter Your Trusted Email</label>
+                <input
+                  type="email"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="yourname@gmail.com"
+                  className="w-full text-xs font-mono p-2.5 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900"
+                  required
+                />
+              </div>
+
+              {authError && (
+                <p className="text-xs text-rose-600 font-mono leading-relaxed bg-rose-50 p-2 rounded border border-rose-200">
+                  {authError}
+                </p>
+              )}
+
+              {authSuccess && (
+                <p className="text-xs text-emerald-600 font-mono leading-relaxed bg-emerald-50 p-2 rounded border border-emerald-200 flex items-center space-x-1">
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{authSuccess}</span>
+                </p>
+              )}
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAuthModal(false)}
+                  className="px-3 py-1.5 text-xs font-mono rounded bg-stone-100 text-stone-700 hover:bg-stone-200"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-mono font-medium rounded bg-stone-900 text-white hover:bg-stone-800"
+                >
+                  Verify & Sign In
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </header>
   );
 }

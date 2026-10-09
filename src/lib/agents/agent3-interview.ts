@@ -21,7 +21,8 @@ const STARSchema = z.object({
 export async function generateInterviewQuestions(
   missingSkills: string[],
   roleTitle: string,
-  companyName: string
+  companyName: string,
+  apiKey?: string
 ): Promise<InterviewGap[]> {
   const prompt = `You are an expert interviewer at ${companyName} hiring for ${roleTitle}.
 
@@ -44,7 +45,7 @@ Rules:
 - Make questions specific to ${companyName}'s domain
 - Maximum 5 questions total`;
 
-  const response = await getGeminiClient().models.generateContent({
+  const response = await getGeminiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json' },
@@ -70,7 +71,8 @@ Rules:
 export async function evaluateAnswer(
   question: string,
   userAnswer: string,
-  skillContext: string
+  skillContext: string,
+  apiKey?: string
 ): Promise<STAREvaluation> {
   const prompt = `You are an expert interviewer evaluating a candidate's answer using the STAR rubric.
 
@@ -101,7 +103,7 @@ Return ONLY valid JSON:
   "modelAnswer": "In my previous role at [Company], we faced [situation]. I was responsible for [task]. I [specific actions]. This resulted in [quantified outcome]."
 }`;
 
-  const response = await getGeminiClient().models.generateContent({
+  const response = await getGeminiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json' },

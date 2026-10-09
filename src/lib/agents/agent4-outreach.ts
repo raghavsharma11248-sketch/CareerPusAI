@@ -17,7 +17,8 @@ const OutreachSchema = z.object({
 export async function generateOutreach(
   profile: CandidateProfile,
   targetJob: TargetJob,
-  matchedSkills: string[]
+  matchedSkills: string[],
+  apiKey?: string
 ): Promise<OutreachDrafts> {
   const prompt = `You are an expert career strategist writing personalized outreach messages.
 
@@ -42,7 +43,7 @@ Rules:
 - Reference specific ${targetJob.companyName} products/values
 - Highlight top matched skills: ${matchedSkills.slice(0, 3).join(', ')}`;
 
-  const response = await getGeminiClient().models.generateContent({
+  const response = await getGeminiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json' },

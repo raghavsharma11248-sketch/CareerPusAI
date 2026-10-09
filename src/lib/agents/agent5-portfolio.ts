@@ -42,7 +42,8 @@ function generateSlug(name: string, company: string, year: string): string {
 export async function generatePortfolio(
   profile: CandidateProfile,
   targetJob: TargetJob,
-  rawResumeText: string
+  rawResumeText: string,
+  apiKey?: string
 ): Promise<PortfolioData> {
   const currentYear = new Date().getFullYear().toString();
 
@@ -91,7 +92,7 @@ Extract and structure all information. Return ONLY valid JSON:
   "contactEmail": "${profile.email}"
 }`;
 
-  const response = await getGeminiClient().models.generateContent({
+  const response = await getGeminiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json' },

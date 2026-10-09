@@ -15,8 +15,42 @@ import {
 import Link from 'next/link';
 
 export default function PortfolioPage() {
-  const { state } = useCandidate();
-  const { portfolioData } = state;
+  const { state, setState, addTerminalLog, apiKey } = useCandidate();
+  const { portfolioData, candidateProfile, targetJob, rawResumeText } = state;
+  const [isRegenerating, setIsRegenerating] = React.useState<boolean>(false);
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true);
+    addTerminalLog('Agent 5 (Portfolio)', `Regenerating portfolio architecture for ${candidateProfile.fullName}...`, 'info');
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-gemini-key'] = apiKey;
+
+    try {
+      const res = await fetch('/api/portfolio', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          candidateProfile,
+          targetJob,
+          rawResumeText,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setState((prev) => ({
+          ...prev,
+          portfolioData: data.portfolio,
+        }));
+        addTerminalLog('Agent 5 (Portfolio)', `Live portfolio updated successfully.`, 'success');
+      }
+    } catch (err) {
+      addTerminalLog('Agent 5 (Portfolio)', `Regeneration failed: ${String(err)}`, 'error');
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#fafaf9] py-10 px-4 sm:px-6 lg:px-8">
@@ -51,6 +85,15 @@ export default function PortfolioPage() {
             </div>
 
             <div className="flex items-center space-x-2">
+              <button
+                onClick={handleRegenerate}
+                disabled={isRegenerating}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-medium bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200 transition-colors disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-stone-600" />
+                <span>{isRegenerating ? 'Generating...' : 'Regenerate'}</span>
+              </button>
+
               <a
                 href={`mailto:${portfolioData.contactEmail}`}
                 className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-stone-900 text-white hover:bg-stone-800 transition-colors shadow-xs"

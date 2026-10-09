@@ -4,6 +4,7 @@ import type { TargetJob } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
+    const customApiKey = req.headers.get('x-gemini-key') || undefined;
     const body = await req.json();
     const { resumeText, targetJob } = body as { resumeText: string; targetJob: TargetJob };
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { score, weakBullets } = await runSemanticAudit(resumeText, targetJob);
+    const { score, weakBullets } = await runSemanticAudit(resumeText, targetJob, customApiKey);
 
     return NextResponse.json({
       success: true,

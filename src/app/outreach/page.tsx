@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function OutreachPage() {
-  const { state, setState, addTerminalLog, isProcessing, setIsProcessing } = useCandidate();
+  const { state, setState, addTerminalLog, isProcessing, setIsProcessing, apiKey } = useCandidate();
   const { outreachDrafts, targetJob, candidateProfile, atsScore } = state;
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -29,10 +29,13 @@ export default function OutreachPage() {
     setIsProcessing(true);
     addTerminalLog('Agent 4 (Outreach)', `Generating personalized outreach for ${targetJob.companyName}...`, 'info');
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-gemini-key'] = apiKey;
+
     try {
       const res = await fetch('/api/outreach', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           candidateProfile,
           targetJob,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useCandidate } from '@/lib/context/CandidateContext';
 import { 
   Sparkles, 
@@ -12,13 +12,15 @@ import {
   FileText, 
   RotateCw, 
   PlusCircle,
-  ExternalLink
+  Upload,
+  FileCheck,
+  FileDown
 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ResumeTailor() {
-  const { state, updateBulletStatus, addTerminalLog, isProcessing, setIsProcessing, setState } = useCandidate();
-  const { weakBullets, targetJob } = state;
+  const { state, updateBulletStatus, addTerminalLog, isProcessing, setIsProcessing, setState, apiKey } = useCandidate();
+  const { weakBullets, targetJob, candidateProfile } = state;
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [customText, setCustomText] = useState<string>('');
@@ -27,6 +29,10 @@ export default function ResumeTailor() {
   const [roleInput, setRoleInput] = useState<string>(targetJob.roleTitle);
   const [companyInput, setCompanyInput] = useState<string>(targetJob.companyName);
   const [jdInput, setJdInput] = useState<string>(targetJob.rawDescription);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const pendingCount = weakBullets.filter((b) => b.status === 'pending').length;
   const acceptedCount = weakBullets.filter((b) => b.status === 'accepted' || b.status === 'customized').length;
@@ -41,6 +47,38 @@ export default function ResumeTailor() {
     setEditingId(null);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    addTerminalLog('System', `Parsing uploaded resume file: ${file.name}...`, 'info');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setResumeInput(data.text);
+        setUploadedFileName(data.fileName);
+        addTerminalLog('System', `Successfully extracted ${data.characterCount} characters from ${data.fileName}`, 'success');
+      } else {
+        addTerminalLog('System', `Failed to parse file: ${data.error}`, 'error');
+        alert(data.error);
+      }
+    } catch (err) {
+      addTerminalLog('System', `File upload error: ${String(err)}`, 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleRunAudit = async () => {
     if (!resumeInput.trim() || !jdInput.trim()) {
       alert('Please provide both resume text and job description.');
@@ -50,10 +88,13 @@ export default function ResumeTailor() {
     setIsProcessing(true);
     addTerminalLog('Agent 1 (Auditor)', `Analyzing resume against ${roleInput} @ ${companyInput}...`, 'info');
 
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['x-gemini-key'] = apiKey;
+
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           resumeText: resumeInput,
           targetJob: {
@@ -70,6 +111,7 @@ export default function ResumeTailor() {
         setState((prev) => ({
           ...prev,
           rawResumeText: resumeInput,
+          uploadedFileName: uploadedFileName || prev.uploadedFileName,
           targetJob: {
             ...prev.targetJob,
             roleTitle: roleInput,
@@ -91,9 +133,43 @@ export default function ResumeTailor() {
     }
   };
 
-  const handleExportPDF = () => {
-    window.print();
-    addTerminalLog('System', 'Generated clean printable/PDF view of candidate resume.', 'info');
+  // Download ATS-Formatted Clean Resume (.txt)
+  const handleDownloadATSResume = () => {
+    const formattedBullets = weakBullets
+      .filter((b) => b.status === 'accepted' || b.status === 'customized')
+      .map((b) => `• ${b.customText || b.suggestedXYZ || b.originalText}`)
+      .join('\n');
+
+    const content = `${candidateProfile.fullName.toUpperCase()}
+${candidateProfile.email} | ${candidateProfile.location || 'San Francisco, CA'}
+${candidateProfile.linkedin ? `LinkedIn: ${candidateProfile.linkedin}` : ''} | ${candidateProfile.github ? `GitHub: ${candidateProfile.github}` : ''}
+
+TARGET OPENING: ${targetJob.roleTitle} — ${targetJob.companyName}
+
+PROFESSIONAL SUMMARY
+${candidateProfile.summary}
+
+KEY TECHNICAL SKILLS (ATS MATCHED)
+${state.atsScore.matchedSkills.join(', ')}
+
+OPTIMIZED PROFESSIONAL EXPERIENCE (GOOGLE XYZ FORMULA)
+${targetJob.companyName} Candidate Profile
+${formattedBullets || weakBullets.map((b) => `• ${b.suggestedXYZ || b.originalText}`).join('\n')}
+
+ATS PARSING HYGIENE GUARANTEE:
+- Single-Column Strict Layout (Passes Workday / Greenhouse sequential parsers)
+- Standardized Section Headers (Experience, Skills, Education)
+- Quantified Achievement Bullets (Google XYZ Formula)
+`;
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${candidateProfile.fullName.toLowerCase().replace(/\s+/g, '_')}_tailored_ats_resume.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    addTerminalLog('System', 'Downloaded clean single-column ATS resume (.txt)', 'success');
   };
 
   return (
@@ -119,19 +195,19 @@ export default function ResumeTailor() {
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowInputModal(true)}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-stone-900 text-white hover:bg-stone-800 transition-colors"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-stone-900 text-white hover:bg-stone-800 transition-colors shadow-xs"
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span>New Audit</span>
             </button>
 
             <button
-              onClick={handleExportPDF}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-medium bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 transition-colors"
-              title="Export Clean Single-Column PDF"
+              onClick={handleDownloadATSResume}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-medium bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 transition-colors shadow-xs"
+              title="Download ATS-Formatted Plain Text Resume"
             >
-              <Download className="w-3.5 h-3.5 text-stone-600" />
-              <span>Export PDF</span>
+              <FileDown className="w-3.5 h-3.5 text-stone-600" />
+              <span>Download ATS Resume</span>
             </button>
           </div>
         </div>
@@ -327,12 +403,15 @@ export default function ResumeTailor() {
         </div>
       </div>
 
-      {/* Input Modal for Custom Audit */}
+      {/* Input Modal for Custom Audit with PDF Drag & Drop */}
       {showInputModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/40 backdrop-blur-xs p-4">
           <div className="bg-white rounded-lg shadow-xl border border-stone-200 max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-stone-200">
-              <h3 className="text-base font-semibold text-stone-900">Run Autonomous ATS Audit</h3>
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-sky-600" />
+                <h3 className="text-base font-semibold text-stone-900">Run Autonomous ATS Audit</h3>
+              </div>
               <button
                 onClick={() => setShowInputModal(false)}
                 className="text-stone-400 hover:text-stone-600"
@@ -341,6 +420,7 @@ export default function ResumeTailor() {
               </button>
             </div>
 
+            {/* Target Role & Company */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-mono text-stone-600 mb-1">Target Role</label>
@@ -364,28 +444,71 @@ export default function ResumeTailor() {
               </div>
             </div>
 
+            {/* Drag & Drop File Upload Area */}
             <div>
-              <label className="block text-xs font-mono text-stone-600 mb-1">Paste Job Description</label>
+              <label className="block text-xs font-mono text-stone-600 mb-1">
+                Upload Resume File (PDF / TXT / MD)
+              </label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf,.txt,.md"
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-stone-300 hover:border-stone-500 rounded-lg p-4 text-center cursor-pointer transition-colors bg-stone-50 hover:bg-stone-100"
+              >
+                {isUploading ? (
+                  <div className="flex items-center justify-center space-x-2 text-xs font-mono text-stone-600">
+                    <RotateCw className="w-4 h-4 animate-spin text-stone-900" />
+                    <span>Extracting resume text...</span>
+                  </div>
+                ) : uploadedFileName ? (
+                  <div className="flex items-center justify-center space-x-2 text-xs font-mono text-emerald-700">
+                    <FileCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Uploaded: {uploadedFileName} (Click to change)</span>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <Upload className="w-5 h-5 mx-auto text-stone-400" />
+                    <p className="text-xs font-mono text-stone-700">
+                      Click to upload resume (.pdf, .txt, .md)
+                    </p>
+                    <p className="text-[11px] text-stone-400">
+                      Automatically extracted and sanitized against prompt injections
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Raw Resume Textarea */}
+            <div>
+              <label className="block text-xs font-mono text-stone-600 mb-1">Or Paste Resume Text Below</label>
+              <textarea
+                value={resumeInput}
+                onChange={(e) => setResumeInput(e.target.value)}
+                rows={5}
+                className="w-full text-xs p-2.5 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans"
+                placeholder="Paste experience bullets, summary, skills..."
+              />
+            </div>
+
+            {/* Job Description Textarea */}
+            <div>
+              <label className="block text-xs font-mono text-stone-600 mb-1">Target Job Description</label>
               <textarea
                 value={jdInput}
                 onChange={(e) => setJdInput(e.target.value)}
                 rows={4}
-                className="w-full text-xs p-2 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans"
-                placeholder="Paste the target job description requirements here..."
+                className="w-full text-xs p-2.5 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans"
+                placeholder="Paste job requirements and qualifications..."
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-mono text-stone-600 mb-1">Paste Resume Text</label>
-              <textarea
-                value={resumeInput}
-                onChange={(e) => setResumeInput(e.target.value)}
-                rows={6}
-                className="w-full text-xs p-2 rounded border border-stone-300 focus:outline-none focus:ring-1 focus:ring-stone-900 font-sans"
-                placeholder="Paste your resume text here (experience bullets, skills, education)..."
-              />
-            </div>
-
+            {/* Modal Footer */}
             <div className="flex justify-end space-x-2 pt-2 border-t border-stone-100">
               <button
                 onClick={() => setShowInputModal(false)}

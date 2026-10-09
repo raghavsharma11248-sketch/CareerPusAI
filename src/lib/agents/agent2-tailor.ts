@@ -21,7 +21,8 @@ const RewriteResponseSchema = z.object({
 
 export async function runResumeTailor(
   weakBullets: WeakBullet[],
-  targetJob: TargetJob
+  targetJob: TargetJob,
+  apiKey?: string
 ): Promise<WeakBullet[]> {
   const pendingBullets = weakBullets.filter((b) => b.status === 'pending');
   if (pendingBullets.length === 0) return weakBullets;
@@ -65,7 +66,7 @@ Return ONLY valid JSON:
   ]
 }`;
 
-  const response = await getGeminiClient().models.generateContent({
+  const response = await getGeminiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: prompt,
     config: { responseMimeType: 'application/json' },

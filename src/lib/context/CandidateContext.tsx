@@ -113,6 +113,13 @@ interface CandidateContextType {
   terminalLogs: TerminalLog[];
   isProcessing: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
+  apiKey: string;
+  setApiKey: (key: string) => void;
+  userEmail: string;
+  setUserEmail: (email: string) => void;
+  isAuthenticated: boolean;
+  loginWithEmail: (email: string) => { success: boolean; error?: string };
+  logout: () => void;
 }
 
 const CandidateContext = createContext<CandidateContextType | undefined>(undefined);
@@ -120,6 +127,58 @@ const CandidateContext = createContext<CandidateContextType | undefined>(undefin
 export function CandidateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CandidateState>(DEFAULT_STATE);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [apiKey, setApiKey] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('alex.chen@gmail.com');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+
+  // Initialize from localStorage on client
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedKey = localStorage.getItem('careerpulse_gemini_key');
+      if (storedKey) setApiKey(storedKey);
+      const storedEmail = localStorage.getItem('careerpulse_user_email');
+      if (storedEmail) {
+        setUserEmail(storedEmail);
+        setIsAuthenticated(true);
+      }
+    }
+  }, []);
+
+  const handleSetApiKey = (key: string) => {
+    setApiKey(key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('careerpulse_gemini_key', key);
+    }
+    addTerminalLog('System', 'Google Gemini API Key updated and securely stored.', 'success');
+  };
+
+  const loginWithEmail = (email: string): { success: boolean; error?: string } => {
+    const trimmed = email.trim().toLowerCase();
+    const trustedDomains = ['gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'yahoo.com', 'icloud.com'];
+    const parts = trimmed.split('@');
+    if (parts.length !== 2 || !trustedDomains.includes(parts[1])) {
+      return {
+        success: false,
+        error: `Only verified trusted email providers (${trustedDomains.slice(0, 4).join(', ')}, etc.) are permitted for candidate security. Disposable/unverified emails are rejected.`,
+      };
+    }
+    setUserEmail(trimmed);
+    setIsAuthenticated(true);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('careerpulse_user_email', trimmed);
+    }
+    addTerminalLog('Auth Guard', `Candidate authenticated with trusted domain: ${parts[1]}`, 'success');
+    return { success: true };
+  };
+
+  const logout = () => {
+    setUserEmail('');
+    setIsAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('careerpulse_user_email');
+    }
+    addTerminalLog('Auth Guard', 'Candidate signed out.', 'info');
+  };
   const [terminalLogs, setTerminalLogs] = useState<TerminalLog[]>([
     {
       id: 'log-1',
@@ -227,6 +286,13 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
         terminalLogs,
         isProcessing,
         setIsProcessing,
+        apiKey,
+        setApiKey: handleSetApiKey,
+        userEmail,
+        setUserEmail,
+        isAuthenticated,
+        loginWithEmail,
+        logout,
       }}
     >
       {children}
