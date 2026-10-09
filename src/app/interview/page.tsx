@@ -2,18 +2,42 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useCandidate } from '@/lib/context/CandidateContext';
+import type { STAREvaluation } from '@/lib/types';
 import { 
   Mic, 
   MicOff, 
   Volume2, 
   Sparkles, 
   RotateCcw, 
-  Send, 
-  CheckCircle2, 
-  Award, 
-  MessageSquare,
-  AlertCircle
+  Award
 } from 'lucide-react';
+
+interface SpeechResultList {
+  [index: number]: {
+    [index: number]: {
+      transcript: string;
+    };
+  };
+  length: number;
+}
+
+interface SpeechRecognitionEventLike {
+  results: SpeechResultList;
+}
+
+interface SpeechRecognitionErrorLike {
+  error: string;
+}
+
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: SpeechRecognitionEventLike) => void;
+  onerror: (event: SpeechRecognitionErrorLike) => void;
+  start: () => void;
+  stop: () => void;
+}
 
 export default function InterviewRoomPage() {
   const { state, addTerminalLog, apiKey } = useCandidate();
@@ -24,10 +48,10 @@ export default function InterviewRoomPage() {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [userTranscript, setUserTranscript] = useState<string>('');
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
-  const [evaluation, setEvaluation] = useState<any>(null);
+  const [evaluation, setEvaluation] = useState<STAREvaluation | null>(null);
   const [speechSupported, setSpeechSupported] = useState<boolean>(true);
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const currentGap = interviewGaps[selectedGapIndex] || {
     id: 'default',
     skillOrExperience: 'System Architecture',
@@ -38,14 +62,19 @@ export default function InterviewRoomPage() {
   // Setup Web Speech API
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
+      const windowWithSpeech = window as unknown as {
+        SpeechRecognition?: new () => SpeechRecognitionLike;
+        webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+      };
+      const SpeechRecognitionClass = windowWithSpeech.SpeechRecognition || windowWithSpeech.webkitSpeechRecognition;
+
+      if (SpeechRecognitionClass) {
+        const recognition = new SpeechRecognitionClass();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEventLike) => {
           let current = '';
           for (let i = 0; i < event.results.length; i++) {
             current += event.results[i][0].transcript + ' ';
@@ -53,15 +82,17 @@ export default function InterviewRoomPage() {
           setUserTranscript(current);
         };
 
-        recognition.onerror = (event: any) => {
+        recognition.onerror = (event: SpeechRecognitionErrorLike) => {
           console.warn('Speech recognition error:', event.error);
           setIsRecording(false);
         };
 
         recognitionRef.current = recognition;
       } else {
-        setSpeechSupported(false);
-        setIsVoiceMode(false);
+        setTimeout(() => {
+          setSpeechSupported(false);
+          setIsVoiceMode(false);
+        }, 0);
       }
     }
   }, []);
@@ -251,7 +282,7 @@ export default function InterviewRoomPage() {
             </div>
 
             <div className="p-4 rounded-lg bg-stone-50 border border-stone-200 text-stone-900 text-sm font-medium leading-relaxed">
-              "{currentGap.question}"
+              &ldquo;{currentGap.question}&rdquo;
             </div>
 
             {/* Answer Input Area */}

@@ -4,8 +4,6 @@ import React from 'react';
 import ScoreGauge from '@/components/ScoreGauge';
 import ResumeTailor from '@/components/ResumeTailor';
 import AgentTerminal from '@/components/AgentTerminal';
-import { Sparkles, ArrowRight, ShieldCheck, Cpu } from 'lucide-react';
-import Link from 'next/link';
 
 export default function DashboardPage() {
   return (

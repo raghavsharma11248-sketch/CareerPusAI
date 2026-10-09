@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useCandidate } from '@/lib/context/CandidateContext';
 import { CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 

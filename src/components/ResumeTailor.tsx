@@ -7,20 +7,13 @@ import {
   Check, 
   X, 
   Edit3, 
-  Download, 
   ArrowRight, 
-  FileText, 
   RotateCw, 
   PlusCircle,
   Upload,
   FileCheck,
   FileDown,
-  RotateCcw,
-  BookOpen,
-  Target,
-  Shield,
-  Layers,
-  Award
+  BookOpen
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -33,7 +26,6 @@ export default function ResumeTailor() {
     setIsProcessing, 
     setState, 
     apiKey, 
-    loadDemo, 
     resetToGuide 
   } = useCandidate();
   const { weakBullets, targetJob, candidateProfile } = state;

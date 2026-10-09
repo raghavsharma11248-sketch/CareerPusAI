@@ -5,18 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCandidate } from '@/lib/context/CandidateContext';
 import { 
-  Sparkles, 
   Mic, 
   Send, 
   Globe, 
   LayoutDashboard, 
   RotateCcw,
-  Zap,
   Key,
   User,
-  ShieldCheck,
   X,
-  Check,
   LogOut,
   ChevronDown
 } from 'lucide-react';

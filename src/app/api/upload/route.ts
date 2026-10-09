@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         const pdfParse = require('pdf-parse');
         const pdfData = await pdfParse(buffer);
         extractedText = pdfData.text || '';
-      } catch (pdfErr) {
+      } catch {
         // Fallback: extract ASCII strings from PDF buffer
         const rawString = buffer.toString('binary');
         const matches = rawString.match(/[\x20-\x7E\r\n\t]{4,}/g);

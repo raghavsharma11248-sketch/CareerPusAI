@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { CandidateState, WeakBullet, TargetJob } from '@/lib/types';
+import React, { createContext, useContext, useState } from 'react';
+import type { CandidateState } from '@/lib/types';
 import { DEMO_CANDIDATE_STATE, DEMO_RESUME_TEXT, DEMO_JOB_DESCRIPTION } from '@/lib/sampleData';
 
 export interface TerminalLog {
@@ -98,27 +98,30 @@ const CandidateContext = createContext<CandidateContextType | undefined>(undefin
 export function CandidateProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CandidateState>(DEFAULT_STATE);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [apiKey, setApiKey] = useState<string>('');
-  const [userName, setUserName] = useState<string>('Alex Chen');
-  const [userEmail, setUserEmail] = useState<string>('alex.chen@gmail.com');
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-
-  // Initialize from localStorage on client
-  useEffect(() => {
+  const [apiKey, setApiKey] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      const storedKey = localStorage.getItem('careerpulse_gemini_key');
-      if (storedKey) setApiKey(storedKey);
-      const storedEmail = localStorage.getItem('careerpulse_user_email');
-      const storedName = localStorage.getItem('careerpulse_user_name');
-      if (storedEmail) {
-        setUserEmail(storedEmail);
-        setIsAuthenticated(true);
-      }
-      if (storedName) {
-        setUserName(storedName);
-      }
+      return localStorage.getItem('careerpulse_gemini_key') || '';
     }
-  }, []);
+    return '';
+  });
+  const [userName, setUserName] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('careerpulse_user_name') || 'Alex Chen';
+    }
+    return 'Alex Chen';
+  });
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('careerpulse_user_email') || 'alex.chen@gmail.com';
+    }
+    return 'alex.chen@gmail.com';
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return !!localStorage.getItem('careerpulse_user_email');
+    }
+    return true;
+  });
 
   const handleSetApiKey = (key: string) => {
     setApiKey(key);
@@ -145,7 +148,8 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
     return login(email);
   };
 
-  const login = (email: string, password?: string): { success: boolean; error?: string } => {
+  const login = (email: string, _password?: string): { success: boolean; error?: string } => {
+    void _password;
     const val = validateEmail(email);
     if (!val.valid) return { success: false, error: val.error };
 
@@ -176,7 +180,8 @@ export function CandidateProvider({ children }: { children: React.ReactNode }) {
     return { success: true };
   };
 
-  const signup = (name: string, email: string, password?: string): { success: boolean; error?: string } => {
+  const signup = (name: string, email: string, _password?: string): { success: boolean; error?: string } => {
+    void _password;
     if (!name.trim()) {
       return { success: false, error: 'Please enter your full name.' };
     }

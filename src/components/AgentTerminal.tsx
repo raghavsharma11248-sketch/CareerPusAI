@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { useCandidate } from '@/lib/context/CandidateContext';
-import { Terminal, Shield, Cpu, Activity, Trash2 } from 'lucide-react';
+import { Cpu, Activity } from 'lucide-react';
 
 export default function AgentTerminal() {
   const { terminalLogs } = useCandidate();
