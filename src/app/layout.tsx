@@ -16,9 +16,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#fafaf9] text-stone-900 font-sans antialiased flex flex-col">
+      <body className="min-h-screen bg-white text-stone-900 font-sans antialiased flex flex-col">
         <CandidateProvider>
-          <Suspense fallback={<div className="h-16 border-b border-stone-200 bg-[#fafaf9]" />}>
+          <Suspense fallback={<div className="h-16 border-b border-stone-200 bg-white" />}>
             <Navbar />
           </Suspense>
           <main className="flex-1">
